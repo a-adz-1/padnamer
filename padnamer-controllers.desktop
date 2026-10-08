@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Controllers
+Comment=Choose which controller is Player 1, 2, 3...
+Exec=@APP@/padnamer-ui
+Icon=input-gaming
+Categories=Game;Settings;
+Terminal=false

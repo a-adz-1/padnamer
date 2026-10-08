@@ -1,0 +1,24 @@
+name: Bug report
+description: Something's broken
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: SteamOS version (Settings → System) and device
+  - type: textarea
+    id: status
+    attributes:
+      label: Output of `padnamer status`
+      render: text
+  - type: textarea
+    id: log
+    attributes:
+      label: "`journalctl -u padnamer -n 100`"
+      render: text

@@ -1,0 +1,11 @@
+{
+  "name": "padnamer",
+  "author": "padnamer",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": ["controllers", "emulation"],
+    "description": "See and change which controller is Player 1, 2, 3... Works with the padnamer service.",
+    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+  }
+}

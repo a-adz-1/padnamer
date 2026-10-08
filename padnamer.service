@@ -1,0 +1,13 @@
+[Unit]
+Description=padnamer - custom names for Bluetooth controllers
+After=systemd-udevd.service bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 @APP@/padnamer.py run --config @CFG@
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

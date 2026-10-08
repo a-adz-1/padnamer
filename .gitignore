@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+decky/node_modules/
+decky/dist/*.map
+*.tar.gz
+.venv/

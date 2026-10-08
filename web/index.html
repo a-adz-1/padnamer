@@ -1,0 +1,559 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later. Copyright (C) 2026 the padnamer authors -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controllers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600&display=swap">
+<style>
+:root {
+  --bg: #f2f4f8; --panel: #ffffff; --ink: #1c2333; --soft: #5b6478; --line: #d9dee8;
+  --p1: #3d6cff; --p2: #e8403f; --p3: #1fa85a; --p4: #c63fc0;
+  --p5: #f08a1c; --p6: #11a7b8; --p7: #c9a800; --p8: #7a8399;
+  --led-on: #39d26b; --led-ps: #f3f6ff; --led-off: #c6ccd8;
+  --focus: #3d6cff; --danger: #c22d2d;
+  --display: "Fredoka", ui-rounded, "Nunito", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1f2635; --panel: #283044; --ink: #e9edf5; --soft: #a3acc0; --line: #39425a;
+    --led-off: #4a5370; --focus: #8eabff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1f2635; --panel: #283044; --ink: #e9edf5; --soft: #a3acc0; --line: #39425a;
+  --led-off: #4a5370; --focus: #8eabff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 17px/1.5 var(--body);
+}
+body.kiosk { font-size: 21px; }
+main { max-width: 860px; margin: 0 auto; padding: 20px 16px 96px; }
+h1, h2 { font-family: var(--display); font-weight: 600; margin: 0; line-height: 1.15; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.25rem; margin: 40px 0 12px; }
+p { margin: 0; }
+button, select, input {
+  font: inherit; color: inherit;
+}
+button {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 10px;
+  padding: 8px 14px; min-height: 44px; cursor: pointer;
+}
+button:hover { border-color: var(--soft); }
+button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+button.quiet { border-color: transparent; background: transparent; text-decoration: underline; padding-inline: 4px; justify-self: start; }
+button.danger { color: var(--danger); }
+button:disabled { opacity: .45; cursor: default; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.gp :focus { outline: 4px solid var(--focus); outline-offset: 3px; }
+
+header.top { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; justify-content: space-between; }
+.playing { color: var(--soft); }
+.playing strong { color: var(--ink); }
+
+/* ---- the line-up ---------------------------------------------------------- */
+.lineup-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin: 28px 0 12px; }
+.lineup-head h2 { margin: 0; }
+.scope { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.scope button { border: 0; border-radius: 0; min-height: 40px; background: transparent; }
+.scope button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.note { color: var(--soft); margin: 4px 0 12px; }
+ol.lineup { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.slot {
+  display: grid; grid-template-columns: 72px 1fr auto; align-items: stretch;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+}
+.slot[data-moved] { animation: settle .5s ease-out; }
+@keyframes settle { from { transform: translateY(var(--from, 0)); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .slot[data-moved] { animation: none; } }
+.num {
+  display: grid; place-items: center; color: #fff;
+  font: 600 2.4rem/1 var(--display); background: var(--pc, var(--p8));
+}
+.who { padding: 12px 16px; min-width: 0; display: grid; align-content: center; gap: 2px; }
+.who .name { font-weight: 700; font-size: 1.1em; overflow-wrap: anywhere; }
+.who .model { color: var(--soft); font-size: .92em; }
+.lights { display: flex; align-items: center; gap: 6px; margin-top: 4px; min-height: 18px; }
+.led { width: 12px; height: 12px; border-radius: 50%; background: var(--led-off); }
+.led.on { background: var(--led-on); box-shadow: 0 0 6px var(--led-on); }
+.lights.ps .led { width: 9px; height: 9px; }
+.lights.ps .led.on { background: var(--led-ps); box-shadow: 0 0 5px var(--led-ps); outline: 1px solid var(--soft); }
+.bar { width: 34px; height: 8px; border-radius: 4px; background: var(--bc); box-shadow: 0 0 8px var(--bc); }
+.nolights { color: var(--soft); font-size: .88em; }
+.acts { display: flex; align-items: center; gap: 6px; padding: 10px 12px; }
+.acts button { min-width: 48px; }
+.empty {
+  border: 2px dashed var(--line); border-radius: 14px; padding: 24px; color: var(--soft);
+}
+.reset-row { margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+/* ---- controller list --------------------------------------------------------- */
+.ctl { border-top: 1px solid var(--line); }
+.ctl:last-child { border-bottom: 1px solid var(--line); }
+.ctl-row { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--led-off); flex: none; }
+.dot.live { background: var(--led-on); }
+.ctl-row .txt { flex: 1; min-width: 0; }
+.ctl-row .txt .model { color: var(--soft); font-size: .92em; }
+.ctl-row .txt .sys { color: var(--soft); font-size: .92em; }
+.edit { padding: 4px 0 20px 22px; display: grid; gap: 16px; max-width: 640px; }
+.field { display: grid; gap: 6px; }
+.field > span { font-weight: 700; }
+.field small { color: var(--soft); }
+.field input, .field select {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px 12px; min-height: 44px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border-radius: 999px; min-height: 38px; padding: 6px 12px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.edit-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.unmanaged { color: var(--soft); font-size: .92em; }
+
+/* ---- misc ------------------------------------------------------------------------ */
+.toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px;
+  max-width: calc(100% - 32px); opacity: 0; transition: opacity .2s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+.toast.err { background: var(--danger); color: #fff; }
+footer.access { margin-top: 40px; color: var(--soft); font-size: .92em; display: grid; gap: 4px; }
+footer.access strong { color: var(--ink); font-family: var(--display); font-size: 1.15em; letter-spacing: .08em; }
+.padhint {
+  position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 1px solid var(--line);
+  padding: 10px 16px; display: none; gap: 18px; justify-content: center; flex-wrap: wrap; font-size: .9em;
+}
+.gp .padhint { display: flex; }
+.padhint b { font-family: var(--display); }
+
+/* ---- PIN screen ------------------------------------------------------------------- */
+.login { max-width: 360px; margin: 12vh auto 0; display: grid; gap: 16px; }
+.login input { font: 600 2rem/1 var(--display); letter-spacing: .4em; text-align: center; padding: 12px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.err { color: var(--danger); min-height: 1.5em; }
+
+@media (max-width: 560px) {
+  .slot { grid-template-columns: 56px 1fr; }
+  .num { font-size: 1.9rem; grid-row: span 2; }
+  .acts { grid-column: 2; padding: 0 12px 12px 16px; }
+  .edit { padding-left: 0; }
+}
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite">
+  <p>Loading controllers…</p>
+</main>
+<div class="padhint" aria-hidden="true">
+  <span><b>A</b> select</span><span><b>B</b> back</span><span><b>LB / RB</b> move player up / down</span><span><b>Y</b> find controller</span>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+const $ = (sel, el = document) => el.querySelector(sel);
+const app = $("#app");
+const params = new URLSearchParams(location.search);
+if (params.has("kiosk")) document.body.classList.add("kiosk");
+
+let state = null;
+let openEditor = null;          // id of controller being edited
+let draft = null;               // unsaved edits
+let busy = false;
+let lastPlayers = [];
+
+// ---- API ----------------------------------------------------------------------
+async function api(path, body) {
+  const opts = body === undefined ? {} : {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Padnamer": "1" },
+    body: JSON.stringify(body), credentials: "same-origin",
+  };
+  const r = await fetch(path, opts);
+  let data = {};
+  try { data = await r.json(); } catch (e) { /* empty body */ }
+  if (r.status === 401) { showLogin(); throw new Error("PIN needed"); }
+  if (!r.ok) throw new Error(data.error || `Request failed (${r.status})`);
+  return data;
+}
+
+async function act(path, body, done) {
+  if (busy) return;
+  busy = true;
+  try {
+    await api(path, body);
+    if (done) toast(done);
+    await refresh();
+  } catch (e) {
+    if (e.message !== "PIN needed") toast(e.message, true);
+  } finally { busy = false; }
+}
+
+let toastTimer;
+function toast(msg, err = false) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.className = "toast"), 2600);
+}
+
+async function refresh() {
+  try {
+    const s = await api("/api/state");
+    state = s;
+    if (!openEditor || !document.activeElement || !app.contains(document.activeElement) ||
+        !document.activeElement.closest(".edit")) render();
+  } catch (e) {
+    if (e.message !== "PIN needed") {
+      app.innerHTML = `<h1>Controllers</h1><p class="note">Can't reach padnamer. Check it's running: <code>systemctl status padnamer</code></p>`;
+    }
+  }
+}
+
+// ---- helpers ------------------------------------------------------------------
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const byId = id => state.controllers.find(c => c.id === id);
+const sysLabel = id => (state.systems.find(s => s.id === id) || {}).label || id;
+const playerColour = n => `var(--p${((n - 1) % 8) + 1})`;
+
+function lightsHTML(c) {
+  const ind = c.indicator || {};
+  const caps = c.capabilities || {};
+  let html = "";
+  if (ind.pattern) {
+    const ps = caps.led_kind === "playstation";
+    html += `<span class="lights${ps ? " ps" : ""}" aria-label="Lights: ${esc(ind.pattern.replace(/●/g, "on ").replace(/○/g, "off ").trim())}">` +
+      [...ind.pattern].map(ch => `<span class="led${ch === "●" ? " on" : ""}"></span>`).join("") + `</span>`;
+  }
+  if (ind.colour) html += `<span class="bar" style="--bc:${esc(ind.colour)}" aria-label="Light bar"></span>`;
+  if (!html) {
+    if (!caps.player_leds && !caps.lightbar) {
+      return `<span class="nolights">No player lights on this controller${caps.rumble ? " – use Find to buzz it" : ""}</span>`;
+    }
+    return "";
+  }
+  return `<span class="lights">${html}</span>`;
+}
+
+// ---- rendering -----------------------------------------------------------------
+function render() {
+  if (!state) return;
+  const focusKey = document.activeElement && document.activeElement.dataset.key;
+  const players = state.players.map(byId).filter(Boolean);
+  const s = state.session;
+  const manual = state.manual;
+
+  let h = `<header class="top"><h1>Controllers</h1>`;
+  h += s ? `<p class="playing">Now playing: <strong>${esc(s.systems.map(sysLabel).join(" / ") || "a game")}</strong> in ${esc(s.emulator)}</p>`
+         : `<p class="playing">No game running</p>`;
+  h += `</header>`;
+
+  // line-up
+  h += `<div class="lineup-head"><h2 id="players-h">Players</h2>`;
+  h += `<div class="scope" role="group" aria-label="When I move a player">
+          <button data-key="scope-now" data-scope="now" aria-pressed="${scopeNow()}">${s ? "This game" : "Next game"}</button>
+          <button data-key="scope-default" data-scope="default" aria-pressed="${!scopeNow()}">Always</button>
+        </div></div>`;
+  h += `<p class="note">${noteText()}</p>`;
+  if (!players.length) {
+    h += `<div class="empty">No controllers connected. Turn one on, or pair a new one in Settings → Bluetooth.</div>`;
+  } else {
+    h += `<ol class="lineup" aria-labelledby="players-h">`;
+    players.forEach((c, i) => {
+      const n = c.player || i + 1;
+      h += `<li class="slot" data-id="${esc(c.id)}" style="--pc:${playerColour(n)}">
+        <div class="num" aria-label="Player ${n}">${n}</div>
+        <div class="who"><span class="name">${esc(c.name)}</span>
+          <span class="model">${esc(c.model_label)}${c.layout.length ? " · Switch Pro mode" : ""}</span>
+          ${lightsHTML(c)}</div>
+        <div class="acts">
+          <button data-key="up-${esc(c.id)}" data-move="-1" data-id="${esc(c.id)}" aria-label="Move ${esc(c.name)} up" ${i === 0 ? "disabled" : ""}>▲</button>
+          <button data-key="down-${esc(c.id)}" data-move="1" data-id="${esc(c.id)}" aria-label="Move ${esc(c.name)} down" ${i === players.length - 1 ? "disabled" : ""}>▼</button>
+          <button data-key="find-${esc(c.id)}" data-find="${esc(c.id)}">Find</button>
+          ${c.bluetooth ? `<button data-key="off-${esc(c.id)}" data-off="${esc(c.id)}" aria-label="Disconnect ${esc(c.name)}">Disconnect</button>` : ""}
+        </div></li>`;
+    });
+    h += `</ol>`;
+  }
+  if (manual || players.some(c => c.bluetooth)) {
+    h += `<div class="reset-row">`;
+    if (manual) h += `<button data-key="reset" data-reset="1">Go back to automatic order</button>`;
+    if (players.some(c => c.bluetooth)) h += `<button data-key="off-all" data-offall="1">Disconnect all controllers</button>`;
+    h += `</div>`;
+    if (manual) h += `<p class="note">Automatic puts each game's own controllers first.</p>`;
+  }
+
+  // controllers
+  h += `<h2 id="all-h">All controllers</h2>`;
+  const known = state.controllers;
+  if (!known.length) h += `<p class="note">Controllers appear here the first time they connect.</p>`;
+  h += `<div aria-labelledby="all-h">`;
+  for (const c of known) {
+    const home = c.home.map(sysLabel).join(", ");
+    h += `<div class="ctl"><div class="ctl-row">
+      <span class="dot${c.connected ? " live" : ""}" aria-label="${c.connected ? "Connected" : "Not connected"}"></span>
+      <div class="txt"><div><strong>${esc(c.name)}</strong></div>
+        <div class="model">${esc(c.model_label)}</div>
+        <div class="sys">${statusLine(c, home)}</div></div>
+      ${c.connected && c.bluetooth && !c.player ? `<button data-key="off2-${esc(c.id)}" data-off="${esc(c.id)}">Disconnect</button>` : ""}
+      <button data-key="edit-${esc(c.id)}" data-edit="${esc(c.id)}" aria-expanded="${openEditor === c.id}">${openEditor === c.id ? "Close" : "Edit"}</button>
+    </div>${openEditor === c.id ? editorHTML(c) : ""}</div>`;
+  }
+  h += `</div>`;
+
+  // access info
+  const w = state.web || {};
+  h += `<footer class="access">`;
+  if (w.pin) h += `<p>Open this page on a phone or computer at home: <strong>${(w.addresses || []).map(a => esc(`http://${a}:${w.port}`)).join(" or ") || "port " + esc(w.port)}</strong></p>
+                   <p>PIN: <strong>${esc(w.pin)}</strong></p>`;
+  h += `<p>padnamer ${esc(state.version)}${state.launch_watch ? "" : " · game launches aren't being detected – see the guide"}</p></footer>`;
+
+  app.innerHTML = h;
+  animateMoves(players.map(c => c.id));
+  if (focusKey) { const el = app.querySelector(`[data-key="${CSS.escape(focusKey)}"]`); if (el) el.focus(); }
+}
+
+function statusLine(c, home) {
+  if (c.mode === "dolphin") return '<span class="unmanaged">Handed to Dolphin as a real Wii device</span>';
+  if (c.mode === "ignore") return '<span class="unmanaged">Left alone by padnamer</span>';
+  return home ? "First player for " + esc(home) : "No home systems";
+}
+
+let scopeChoice = null;
+function scopeNow() { return scopeChoice !== "default"; }
+function noteText() {
+  const m = state.manual, s = state.session;
+  if (scopeChoice === "default") return "Moving a player changes the usual order. Each game still puts its own controllers first.";
+  if (m && m.pending) return "Order set by hand. It's used for the next game you start, then goes back to automatic.";
+  if (m) return m.scope === "persistent" ? "Order set by hand until you go back to automatic."
+                                          : "Order set by hand for this game. It goes back to automatic when the game closes.";
+  if (s) return "Each game puts its own controllers first. Moving a player now only changes this game. Some emulators need the game restarting to notice.";
+  return "Each game puts its own controllers first, then everyone else in this order.";
+}
+
+function animateMoves(ids) {
+  const prev = lastPlayers;
+  lastPlayers = ids;
+  if (!prev.length) return;
+  app.querySelectorAll(".slot").forEach((el, i) => {
+    const was = prev.indexOf(el.dataset.id);
+    if (was !== -1 && was !== i) {
+      el.style.setProperty("--from", `${(was - i) * 100}%`);
+      el.dataset.moved = "1";
+    }
+  });
+}
+
+function editorHTML(c) {
+  if (!draft || draft.id !== c.id) {
+    draft = { id: c.id, name: c.name, model: c.model || "auto", home: [...c.home],
+              home_default: c.home_is_default, present_as: c.present_as, leds: c.leds, mode: c.mode };
+  }
+  const detected = state.models.find(m => m.id === c.detected_model);
+  const models = `<option value="auto"${draft.model === "auto" ? " selected" : ""}>Detected: ${esc(detected ? detected.label : "unknown")}</option>` +
+    state.models.map(m => `<option value="${esc(m.id)}"${draft.model === m.id ? " selected" : ""}>${esc(m.label)}</option>`).join("");
+  const chips = state.systems.map(s =>
+    `<button class="chip" data-key="sys-${esc(s.id)}" data-sys="${esc(s.id)}" aria-pressed="${draft.home.includes(s.id)}">${esc(s.label)}</button>`).join("");
+  const nintendo = c.family === "nintendo";
+  const managed = draft.mode === "managed";
+  const modeField = `<label class="field"><span>How padnamer handles it</span>
+      <select data-key="f-mode" data-f="mode">
+        <option value="managed"${managed ? " selected" : ""}>Rename it and put it in the player order</option>
+        ${c.can_dolphin ? `<option value="dolphin"${draft.mode === "dolphin" ? " selected" : ""}>Hand it to Dolphin as a real Wii device</option>` : ""}
+        <option value="ignore"${draft.mode === "ignore" ? " selected" : ""}>Leave it exactly as it is</option>
+      </select>
+      ${c.can_dolphin ? "<small>Real Wii device: Dolphin talks to it directly (needed for the Balance Board; also gives Wii Remotes their speaker and exact motion). It's hidden from other games.</small>" : ""}</label>`;
+  if (!managed) {
+    return `<div class="edit" data-for="${esc(c.id)}">
+    <label class="field"><span>Name</span>
+      <input data-key="f-name" data-f="name" value="${esc(draft.name)}" maxlength="60" autocomplete="off"></label>
+    <label class="field"><span>What controller is this?</span>
+      <select data-key="f-model" data-f="model">${models}</select></label>
+    ${modeField}
+    <div class="edit-actions">
+      <button class="primary" data-key="save" data-save="1">Save changes</button>
+      <button data-key="cancel" data-cancel="1">Cancel</button>
+      <button class="danger" data-key="forget" data-forget="${esc(c.id)}">Forget this controller</button>
+    </div></div>`;
+  }
+  return `<div class="edit" data-for="${esc(c.id)}">
+    <label class="field"><span>Name</span>
+      <input data-key="f-name" data-f="name" value="${esc(draft.name)}" maxlength="60" autocomplete="off">
+      <small>What emulators show. Keep names different so every controller can be told apart.</small></label>
+    <label class="field"><span>What controller is this?</span>
+      <select data-key="f-model" data-f="model">${models}</select></label>
+    <div class="field"><span>Home systems</span>
+      <small>In games for these systems, this controller is Player 1 (or the next free player).</small>
+      <div class="chips">${chips}</div>
+      <button class="quiet" data-key="f-homedef" data-homedef="1">Use the usual systems for this controller</button></div>
+    ${nintendo ? `<label class="field"><span>In Switch emulators</span>
+      <select data-key="f-present" data-f="present_as">
+        <option value="original"${draft.present_as === "original" ? " selected" : ""}>Keep its own buttons</option>
+        <option value="auto"${draft.present_as === "auto" ? " selected" : ""}>Act as a Switch Pro Controller while a Switch emulator is open</option>
+        <option value="switch_pro"${draft.present_as === "switch_pro" ? " selected" : ""}>Always act as a Switch Pro Controller</option>
+      </select></label>` : ""}
+    <label class="field"><span>Player lights</span>
+      <select data-key="f-leds" data-f="leds">
+        <option value="auto"${draft.leds === "auto" ? " selected" : ""}>Show the player number</option>
+        <option value="single"${draft.leds === "single" ? " selected" : ""}>One light per player number</option>
+        <option value="off"${draft.leds === "off" ? " selected" : ""}>Leave the lights alone</option>
+      </select></label>
+    ${modeField}
+    <div class="edit-actions">
+      <button class="primary" data-key="save" data-save="1">Save changes</button>
+      <button data-key="cancel" data-cancel="1">Cancel</button>
+      <button class="danger" data-key="forget" data-forget="${esc(c.id)}">Forget this controller</button>
+    </div></div>`;
+}
+
+// ---- events ------------------------------------------------------------------------
+app.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b || b.disabled) return;
+  const d = b.dataset;
+  if (d.scope) { scopeChoice = d.scope; render(); return; }
+  if (d.move) return move(d.id, +d.move);
+  if (d.find) return act("/api/identify", { id: d.find }, "Look for the flashing, buzzing controller");
+  if (d.reset) return act("/api/order/reset", {}, "Back to automatic order");
+  if (d.off) return act("/api/disconnect", { id: d.off }, `Disconnecting ${byId(d.off) ? byId(d.off).name : "controller"}`);
+  if (d.offall) {
+    if (!confirm("Disconnect every Bluetooth controller? They switch off and need their button pressing to come back.")) return;
+    return act("/api/disconnect_all", {}, "Disconnecting all controllers");
+  }
+  if (d.edit) { openEditor = openEditor === d.edit ? null : d.edit; draft = null; render(); return; }
+  if (d.sys) {
+    const i = draft.home.indexOf(d.sys);
+    i === -1 ? draft.home.push(d.sys) : draft.home.splice(i, 1);
+    draft.home_default = false;
+    b.setAttribute("aria-pressed", String(i === -1));
+    return;
+  }
+  if (d.homedef) {
+    draft.home_default = true;
+    const c = byId(draft.id);
+    const model = draft.model === "auto" ? c.detected_model : draft.model;
+    draft.home = [...((state.models.find(m => m.id === model) || {}).home || [])];
+    app.querySelectorAll("[data-sys]").forEach(x => x.setAttribute("aria-pressed", String(draft.home.includes(x.dataset.sys))));
+    return;
+  }
+  if (d.save) return save();
+  if (d.cancel) { openEditor = null; draft = null; render(); return; }
+  if (d.forget) {
+    if (!confirm("Forget this controller? It's added again, with a new name, next time it connects.")) return;
+    openEditor = null; draft = null;
+    return act("/api/forget", { id: d.forget }, "Controller forgotten");
+  }
+});
+app.addEventListener("input", e => {
+  const f = e.target.dataset.f;
+  if (f && draft) draft[f] = e.target.value;
+});
+app.addEventListener("change", e => {
+  const f = e.target.dataset.f;
+  if (!f || !draft) return;
+  draft[f] = e.target.value;
+  if (f === "mode") render();          // fields shown depend on the mode
+});
+
+function move(id, delta) {
+  const order = [...state.players];
+  const i = order.indexOf(id);
+  const j = Math.max(0, Math.min(order.length - 1, i + delta));
+  if (i === j) return;
+  order.splice(j, 0, order.splice(i, 1)[0]);
+  if (scopeChoice === "default") {
+    // keep disconnected controllers where they were in the usual order
+    const rest = state.controllers.map(c => c.id).filter(x => !order.includes(x));
+    return act("/api/order", { ids: [...order, ...rest], which: "default" }, "Usual order saved");
+  }
+  return act("/api/order", { ids: order, which: "now" });
+}
+
+async function save() {
+  const body = { id: draft.id, name: draft.name.trim(), model: draft.model,
+                 home: draft.home_default ? null : draft.home, present_as: draft.present_as,
+                 leds: draft.leds, mode: draft.mode };
+  const id = draft.id;
+  await act("/api/controller", body, "Saved");
+  if (byId(id) && byId(id).name === body.name) { openEditor = null; draft = null; render(); }
+}
+
+// ---- PIN screen ------------------------------------------------------------------------
+function showLogin(msg = "") {
+  app.innerHTML = `<form class="login" id="login">
+    <h1>Controllers</h1>
+    <p>Enter the PIN shown on the Steam Deck's controller page (or run <code>padnamer status</code>).</p>
+    <input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="8" aria-label="PIN" required>
+    <p class="err" id="pin-err">${esc(msg)}</p>
+    <button class="primary" type="submit">Unlock</button></form>`;
+  const form = $("#login");
+  $("#pin").focus();
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    try {
+      const r = await fetch("/api/login", { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-Padnamer": "1" },
+        body: JSON.stringify({ pin: $("#pin").value }) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) { $("#pin-err").textContent = data.error || "That didn't work"; return; }
+      await refresh();
+    } catch (e) { $("#pin-err").textContent = "Can't reach padnamer"; }
+  });
+}
+
+// ---- controller navigation (Gamepad API, for Game Mode) -----------------------------------
+const pad = { last: {}, repeatAt: 0 };
+function focusables() {
+  return [...app.querySelectorAll("button:not([disabled]), select, input")].filter(el => el.offsetParent !== null);
+}
+function moveFocus(dir) {
+  const els = focusables();
+  if (!els.length) return;
+  let i = els.indexOf(document.activeElement);
+  i = i === -1 ? 0 : Math.max(0, Math.min(els.length - 1, i + dir));
+  els[i].focus();
+  els[i].scrollIntoView({ block: "nearest" });
+}
+function pressed(gp, i) { return gp.buttons[i] && gp.buttons[i].pressed; }
+function gamepadLoop(t) {
+  const gps = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  if (gps.length) document.body.classList.add("gp");
+  for (const gp of gps) {
+    const prev = pad.last[gp.index] || [];
+    const now = gp.buttons.map(b => b.pressed);
+    const edge = i => now[i] && !prev[i];
+    const axisY = gp.axes[1] || 0;
+    const down = pressed(gp, 13) || axisY > 0.6, up = pressed(gp, 12) || axisY < -0.6;
+    const left = pressed(gp, 14), right = pressed(gp, 15);
+    if ((up || down || left || right) && t > pad.repeatAt) {
+      moveFocus(up || left ? -1 : 1);
+      pad.repeatAt = t + (pad.held ? 140 : 380);
+      pad.held = true;
+    } else if (!(up || down || left || right)) { pad.held = false; pad.repeatAt = 0; }
+    const el = document.activeElement;
+    if (edge(0) && el && app.contains(el)) el.click();                          // A
+    if (edge(1)) { if (openEditor) { openEditor = null; draft = null; render(); } } // B
+    const slot = el && el.closest && el.closest(".slot");
+    if (slot && edge(4)) move(slot.dataset.id, -1);                            // LB
+    if (slot && edge(5)) move(slot.dataset.id, 1);                             // RB
+    if (slot && edge(3)) act("/api/identify", { id: slot.dataset.id }, "Look for the flashing controller"); // Y
+    pad.last[gp.index] = now;
+  }
+  requestAnimationFrame(gamepadLoop);
+}
+window.addEventListener("gamepadconnected", () => document.body.classList.add("gp"));
+requestAnimationFrame(gamepadLoop);
+
+refresh();
+setInterval(() => { if (!busy && !document.hidden) refresh(); }, 1500);
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Tools for the udev and kernel-ABI checks
+        run: sudo apt-get update -q && sudo apt-get install -y -q udev gcc linux-libc-dev
+      - name: Unit tests
+        run: python -m unittest discover -v tests
+      - name: Example config is valid
+        run: python padnamer.py check --config config.example.toml
+      - name: Shell scripts parse
+        run: bash -n install.sh && bash -n uninstall.sh && sh -n padnamer-ui
+
+  decky:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: decky
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx tsc --noEmit --skipLibCheck
+      - run: npm run build

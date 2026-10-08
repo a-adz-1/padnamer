@@ -1,0 +1,43 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests must pass before a release
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q udev gcc linux-libc-dev
+          python -m unittest discover tests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build the Decky panel
+        working-directory: decky
+        run: npm ci && npm run build
+      - name: Package
+        run: |
+          name="padnamer-${GITHUB_REF_NAME#v}"
+          mkdir -p "dist/$name"
+          git ls-files | grep -v '^\.github/' | grep -v '^decky/package-lock.json$' \
+            | tar -cf - -T - | tar -xf - -C "dist/$name"
+          cp decky/dist/index.js "dist/$name/decky/dist/index.js"
+          tar -C dist -czf "dist/$name.tar.gz" "$name"
+          echo "ASSET=dist/$name.tar.gz" >> "$GITHUB_ENV"
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$ASSET" \
+            --title "padnamer $GITHUB_REF_NAME" --generate-notes \
+            $([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease)

@@ -1,0 +1,32 @@
+name: Emulator report
+description: Tell us whether an emulator picks the right Player 1
+labels: ["emulator"]
+body:
+  - type: input
+    id: emulator
+    attributes:
+      label: Emulator and version
+      description: e.g. "ares 143 (EmuDeck)"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System / game
+  - type: dropdown
+    id: result
+    attributes:
+      label: Did the system's own controller become Player 1?
+      options: ["Yes, automatically", "Yes, after a one-time setup", "No"]
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Setup needed, or what went wrong
+  - type: textarea
+    id: log
+    attributes:
+      label: Log while starting the game
+      description: "`journalctl -u padnamer --since '5 min ago'`"
+      render: text

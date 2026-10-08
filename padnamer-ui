@@ -1,0 +1,15 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 the padnamer authors
+# Opens the padnamer controller page full screen. Used by the "Controllers" library tile.
+URL="http://127.0.0.1:8742/?kiosk=1"
+for app in com.google.Chrome org.chromium.Chromium com.microsoft.Edge com.brave.Browser; do
+    if flatpak info "$app" >/dev/null 2>&1; then
+        exec flatpak run "$app" --kiosk --no-first-run --app="$URL"
+    fi
+done
+if flatpak info org.mozilla.firefox >/dev/null 2>&1; then
+    exec flatpak run org.mozilla.firefox --kiosk "$URL"
+fi
+# No browser installed: ask Steam to open it in its own web browser
+exec steam "steam://openurl/$URL"

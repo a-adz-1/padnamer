@@ -1,0 +1,34 @@
+# padnamer settings.
+#
+# Controllers themselves are managed in the controller page (web UI):
+# every controller that connects is remembered automatically, and you can
+# rename it, say what it is, pick its home systems and set the usual order
+# there. They're stored in controllers.json next to this file.
+#
+# Changes to this file apply within about a second.
+
+[settings]
+# How long an order set by hand (web page / Quick Access panel) lasts:
+#   "session"    - for the game it was set during, or the next game if set between games
+#   "persistent" - until you press "Go back to automatic order"
+#   "boot"       - until the padnamer service restarts
+manual_order = "session"
+led_style = "switch"        # player lights: "switch" (Nintendo patterns), "single" or "off"
+hide_hidraw = true          # hide the raw HID node too, so nothing sees a pad twice
+pause_on_launch = true      # hold a starting emulator for a moment while the pads are put in order
+log_level = "info"          # "debug" shows every rumble effect
+# Processes that switch "Switch Pro mode: while a Switch emulator is open" pads over
+switch_emulators = ["eden", "ryujinx", "yuzu", "citron", "sudachi", "suyu", "torzu"]
+
+[web]
+enabled = true
+bind = "0.0.0.0"            # "127.0.0.1" = only this machine (and the Quick Access panel)
+port = 8742
+require_pin = true          # LAN devices need the PIN; this machine never does
+
+[retroarch]
+manage = true               # write each game's player order into the core's overrides
+reservation = "preferred"   # "preferred": falls back to any pad; "reserved": waits for that pad
+
+[dolphin]
+manage = true               # use each player's saved Dolphin profile for GameCube/Wii games
