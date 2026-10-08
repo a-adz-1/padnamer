@@ -3,9 +3,14 @@ name: release
 on:
   push:
     tags: ["v*"]
+  release:
+    types: [published]
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
 
 jobs:
   release:
@@ -38,6 +43,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "$ASSET" \
-            --title "padnamer $GITHUB_REF_NAME" --generate-notes \
-            $([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease)
+          # Works whether the tag was pushed with git or created with "Draft a new release" on GitHub
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$ASSET" \
+              --title "padnamer $GITHUB_REF_NAME" --generate-notes \
+              $([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease)
+          fi
